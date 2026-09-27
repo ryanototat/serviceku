@@ -1,0 +1,24 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Setiap pengguna hanya boleh membaca dan menulis dokumennya sendiri.
+    // Dokumen disimpan di users/{uid}, dengan uid berasal dari token login
+    // Firebase Authentication — tidak bisa dipalsukan dari sisi peramban.
+    match /users/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+
+      allow write: if request.auth != null
+                   && request.auth.uid == uid
+                   && request.resource.data.vehicles is list
+                   && request.resource.data.vehicles.size() <= 50;
+    }
+
+    // Semua jalur lain tertutup. Aturan di Firestore bersifat menambah
+    // (OR), jadi baris ini tidak melonggarkan aturan di atas.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
